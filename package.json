@@ -1,0 +1,24 @@
+{
+  "name": "aries-socket-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "prisma generate && nodemon server.js",
+    "build": "prisma generate && vite build",
+    "start": "start server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.16.1",
+    "@types/socket.io": "^3.0.2",
+    "@upstash/redis": "^1.31.6",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.11",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nodemon": "^3.1.4",
+    "prisma": "^5.16.1",
+    "socket.io": "^4.7.5",
+    "vercel": "^34.2.7"
+  }
+}
