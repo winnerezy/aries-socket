@@ -23,7 +23,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chat", async (data) => {
-    const { sender, receiver, content } = data;
+    const { sender, receiver, content, photo } = data;
     const receiverSocket = connectedUsers.get(receiver);
 
     const message = {
