@@ -30,6 +30,7 @@ io.on("connection", (socket) => {
       sender,
       receiver,
       content,
+      photo,
       createdAt: new Date().toISOString(),
     };
 
