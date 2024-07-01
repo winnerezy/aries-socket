@@ -18,6 +18,7 @@ model User {
   bio String?
   friends String[]
   role String @default("User")
+  status String @default("Offline")
 }
 
 model Conversation {

@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@prisma/client':
-        specifier: ^5.16.1
-        version: 5.16.1(prisma@5.16.1)
       '@types/socket.io':
         specifier: ^3.0.2
         version: 3.0.2
@@ -32,9 +29,6 @@ importers:
       nodemon:
         specifier: ^3.1.4
         version: 3.1.4
-      prisma:
-        specifier: ^5.16.1
-        version: 5.16.1
       socket.io:
         specifier: ^4.7.5
         version: 4.7.5
@@ -44,6 +38,16 @@ importers:
       vite:
         specifier: ^5.3.2
         version: 5.3.2(@types/node@16.18.11)
+    devDependencies:
+      '@prisma/client':
+        specifier: ^5.16.1
+        version: 5.16.1(prisma@5.16.1)
+      i:
+        specifier: ^0.3.7
+        version: 0.3.7
+      prisma:
+        specifier: ^5.16.1
+        version: 5.16.1
 
 packages:
 
@@ -1030,6 +1034,10 @@ packages:
   human-signals@1.1.1:
     resolution: {integrity: sha512-SEQu7vl8KjNL2eoGBLF3+wAjpsNfA9XMlXAYj/3EdaNfAlxKthD1xjEQfGOUhllCGGJVNY34bRr6lPINhNjyZw==}
     engines: {node: '>=8.12.0'}
+
+  i@0.3.7:
+    resolution: {integrity: sha512-FYz4wlXgkQwIPqhzC5TdNMLSE5+GS1IIDJZY/1ZiEPCT2S3COUVZeT5OW4BmW4r5LHLQuOosSwsvnroG9GR59Q==}
+    engines: {node: '>=0.4'}
 
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
@@ -2747,6 +2755,8 @@ snapshots:
       - supports-color
 
   human-signals@1.1.1: {}
+
+  i@0.3.7: {}
 
   iconv-lite@0.4.24:
     dependencies:

@@ -15,23 +15,31 @@ const io = new Server(httpServer, {
 
 const connectedUsers = new Map(); // Using a map to store the connected user sockets
 
-const onlineUsers = []
 io.on("connection", (socket) => {
-  socket.on("register", (userId) => {
+  socket.on("register", async(userId) => {
     socket.userId = userId;
 
-    connectedUsers.set(userId, socket);
+    if(userId !== ''){
+      connectedUsers.set(userId, socket);
 
-    // finding the index for the users array and set them online to get the active users
-    const userIndex = onlineUsers.findIndex((user) => user.userId === userId); 
-    if(userId !== ''){ // it sends an empty string at first so this is needed
-      if (userIndex === -1) {
-        onlineUsers.push({ userId, status: 'Online' });
-      } else {
-        onlineUsers[userIndex].status = 'Online';
-      }
+      await prisma.user.update({ // updating the status on  the database for a much clear and better approach than using an array
+        where: {
+          id: userId
+        },
+        data: {
+          status: 'Online'
+        }
+      });
     }
-    io.emit("status", onlineUsers);
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        status: true
+      }
+    })
+
+    io.emit("status", users);
   });
 
   socket.on("chat", async (data) => {
@@ -53,39 +61,32 @@ io.on("connection", (socket) => {
       await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
       await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
 
-      const existingConversation = await prisma.conversation.findFirst({
-        where: {
-          AND: [{ senderId: sender }, { receiverId: receiver }],
-        },
-      });
-
-      if (!existingConversation) {
-        await prisma.conversation.create({
-          data: {
-            senderId: sender,
-            receiverId: receiver,
-          },
-        });
-      }
-    } else {
-      const userId = socket.userId
-      const userIndex = onlineUsers.findIndex((user) => user.userId === userId);
-      if (userIndex !== -1) {
-        onlineUsers[userIndex].status = 'Offline';
-      }
-      io.emit("status", onlineUsers);
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async() => {
     if (socket.userId) {
       const userId = socket.userId
-      const userIndex = onlineUsers.findIndex((user) => user.userId === userId);
-      if (userIndex !== -1) {
-        onlineUsers[userIndex].status = 'Offline';
-      }
-      io.emit("status", onlineUsers);
-      connectedUsers.delete(socket.userId);
+      
+      // connectedUsers.delete(socket.userId);
+
+      await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          status: 'Offline'
+        }
+      });
+
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          status: true
+        }
+      })
+
+      io.emit("status", users);
     }
   });
 });
