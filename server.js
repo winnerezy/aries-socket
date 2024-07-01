@@ -14,11 +14,12 @@ const io = new Server(httpServer, {
 });
 
 const connectedUsers = new Map(); // Using a map to store the connected user sockets
-
+const onlineUsers = new Set()
 io.on("connection", (socket) => {
   socket.on("register", (userId) => {
     socket.userId = userId;
     connectedUsers.set(userId, socket);
+    onlineUsers.add(userId)
     io.emit("status", "Online");
   });
 
@@ -35,25 +36,29 @@ io.on("connection", (socket) => {
     };
 
     if (receiverSocket) {
-      io.to(receiverSocket.id).emit("chat", data);
-      io.to(socket.id).emit("chat", data);
-
-      await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
-      await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
-
-      const existingConversation = await prisma.conversation.findFirst({
-        where: {
-          AND: [{ senderId: sender }, { receiverId: receiver }],
-        },
-      });
-
-      if (!existingConversation) {
-        await prisma.conversation.create({
-          data: {
-            senderId: sender,
-            receiverId: receiver,
+      if(onlineUsers.has(receiver)){
+        io.to(receiverSocket.id).emit("chat", data);
+        io.to(socket.id).emit("chat", data);
+  
+        await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
+        await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
+  
+        const existingConversation = await prisma.conversation.findFirst({
+          where: {
+            AND: [{ senderId: sender }, { receiverId: receiver }],
           },
         });
+  
+        if (!existingConversation) {
+          await prisma.conversation.create({
+            data: {
+              senderId: sender,
+              receiverId: receiver,
+            },
+          });
+        }
+      } else {
+        io.to(socket.id).emit('status', 'Receiver not online')
       }
     } else {
       io.emit("status", "Offline");
@@ -63,6 +68,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (socket.userId) {
       connectedUsers.delete(socket.userId);
+      onlineUsers.delete(socket.userId)
       io.emit("status", "Offline");
     }
   });
