@@ -14,13 +14,24 @@ const io = new Server(httpServer, {
 });
 
 const connectedUsers = new Map(); // Using a map to store the connected user sockets
-const onlineUsers = new Set()
+
+const onlineUsers = []
 io.on("connection", (socket) => {
   socket.on("register", (userId) => {
     socket.userId = userId;
+
     connectedUsers.set(userId, socket);
-    onlineUsers.add(userId)
-    io.emit("status", "Online");
+
+    // finding the index for the users array and set them online to get the active users
+    const userIndex = onlineUsers.findIndex((user) => user.userId === userId); 
+    if(userId !== ''){ // it sends an empty string at first so this is needed
+      if (userIndex === -1) {
+        onlineUsers.push({ userId, status: 'Online' });
+      } else {
+        onlineUsers[userIndex].status = 'Online';
+      }
+    }
+    io.emit("status", onlineUsers);
   });
 
   socket.on("chat", async (data) => {
@@ -36,40 +47,45 @@ io.on("connection", (socket) => {
     };
 
     if (receiverSocket) {
-      if(onlineUsers.has(receiver)){
-        io.to(receiverSocket.id).emit("chat", data);
-        io.to(socket.id).emit("chat", data);
-  
-        await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
-        await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
-  
-        const existingConversation = await prisma.conversation.findFirst({
-          where: {
-            AND: [{ senderId: sender }, { receiverId: receiver }],
+      io.to(receiverSocket.id).emit("chat", data);
+      io.to(socket.id).emit("chat", data);
+
+      await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
+      await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
+
+      const existingConversation = await prisma.conversation.findFirst({
+        where: {
+          AND: [{ senderId: sender }, { receiverId: receiver }],
+        },
+      });
+
+      if (!existingConversation) {
+        await prisma.conversation.create({
+          data: {
+            senderId: sender,
+            receiverId: receiver,
           },
         });
-  
-        if (!existingConversation) {
-          await prisma.conversation.create({
-            data: {
-              senderId: sender,
-              receiverId: receiver,
-            },
-          });
-        }
-      } else {
-        io.to(socket.id).emit('status', 'Receiver not online')
       }
     } else {
-      io.emit("status", "Offline");
+      const userId = socket.userId
+      const userIndex = onlineUsers.findIndex((user) => user.userId === userId);
+      if (userIndex !== -1) {
+        onlineUsers[userIndex].status = 'Offline';
+      }
+      io.emit("status", onlineUsers);
     }
   });
 
   socket.on("disconnect", () => {
     if (socket.userId) {
+      const userId = socket.userId
+      const userIndex = onlineUsers.findIndex((user) => user.userId === userId);
+      if (userIndex !== -1) {
+        onlineUsers[userIndex].status = 'Offline';
+      }
+      io.emit("status", onlineUsers);
       connectedUsers.delete(socket.userId);
-      onlineUsers.delete(socket.userId)
-      io.emit("status", "Offline");
     }
   });
 });
