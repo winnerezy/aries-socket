@@ -31,7 +31,7 @@ io.on("connection", (socket) => {
     socket.userId = userId;
     
     if(userId !== ''){
-      connectedUsers.set(userId, socket);
+      // connectedUsers.set(userId, socket);
 
       // saving and updating each user socket in the database for efficent handling
       await prisma.conversation.upsert({
