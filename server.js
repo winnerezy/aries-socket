@@ -67,14 +67,35 @@ io.on("connection", (socket) => {
     io.emit("status", users);
   });
 
+  // user typing indicator
+  socket.on('typing', async (data) => {
+    const { user, userId, typing } = data;
+
+    const sender = await prisma.user.findFirst({
+      where: { id: user }
+    });
+
+    const receiverSocket = await prisma.conversation.findFirst({
+      where: { userId: userId }
+    });
+
+    if(typing){
+      io.to(receiverSocket.socket).emit('is typing', `${sender.firstname} is typing...`);
+    } else {
+      io.to(receiverSocket.socket).emit('is typing', "");
+    }
+  });
+
+  
   socket.on("chat", async (data) => {
     const { sender, receiver, content, photo } = data;
     // const receiverSocket = connectedUsers.get(receiver);
-    const receive = await prisma.conversation.findFirst({
+    const receiverSocket = await prisma.conversation.findFirst({
       where: {
         userId: receiver
       }
     })
+
     const message = {
       sender,
       receiver,
@@ -83,8 +104,8 @@ io.on("connection", (socket) => {
       createdAt: new Date().toISOString(),
     };
     
-        if (receive) {
-          io.to(receive.socket).emit("chat", data);
+        if (receiverSocket) {
+          io.to(receiverSocket.socket).emit("chat", data);
           io.to(socket.id).emit("chat", data);
     
       await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
