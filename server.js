@@ -86,6 +86,15 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("stop typing", async({ user, userId }) => {
+    const receiverSocket = await prisma.conversation.findFirst({
+      where: { userId: userId }
+    });
+    if (receiverSocket) {
+      io.to(receiverSocket.socket).emit("stop typing");
+    }
+  });
+
   
   socket.on("chat", async (data) => {
     const { sender, receiver, content, photo } = data;
