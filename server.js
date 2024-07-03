@@ -13,7 +13,7 @@ const io = new Server(httpServer, {
   },
 });
 
-const connectedUsers = new Map(); // Using a map to store the connected user sockets
+// const connectedUsers = new Map(); // Using a map to store the connected user sockets
 
 io.on("connection", (socket) => {
 // const req = []
@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
 
   socket.on("chat", async (data) => {
     const { sender, receiver, content, photo } = data;
-    const receiverSocket = connectedUsers.get(receiver);
+    // const receiverSocket = connectedUsers.get(receiver);
     const receive = await prisma.conversation.findFirst({
       where: {
         userId: receiver
