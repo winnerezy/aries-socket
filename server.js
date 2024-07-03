@@ -16,11 +16,36 @@ const io = new Server(httpServer, {
 const connectedUsers = new Map(); // Using a map to store the connected user sockets
 
 io.on("connection", (socket) => {
+// const req = []
+//   socket.on("friend-request", ({ senderId, receiverId }) => {
+//     req.push({ senderId, receiverId })
+//     const receiverSocket = connectedUsers.get(receiverId)
+//     if(receiverSocket){
+//       io.to(receiverSocket.id).emit("request", req)
+//     } else {
+//       console.log('nah')
+//     }
+//   })
+
   socket.on("register", async(userId) => {
     socket.userId = userId;
-
+    
     if(userId !== ''){
       connectedUsers.set(userId, socket);
+
+      // saving and updating each user socket in the database for efficent handling
+      await prisma.conversation.upsert({
+        where: {
+          userId,
+        },
+        update: {
+          socket: socket.id
+        },
+        create: {
+          userId,
+          socket: socket.id
+        }
+      })
 
       await prisma.user.update({ // updating the status on  the database for a much clear and better approach than using an array
         where: {
@@ -45,7 +70,11 @@ io.on("connection", (socket) => {
   socket.on("chat", async (data) => {
     const { sender, receiver, content, photo } = data;
     const receiverSocket = connectedUsers.get(receiver);
-
+    const receive = await prisma.conversation.findFirst({
+      where: {
+        userId: receiver
+      }
+    })
     const message = {
       sender,
       receiver,
@@ -53,13 +82,13 @@ io.on("connection", (socket) => {
       photo,
       createdAt: new Date().toISOString(),
     };
-
-    if (receiverSocket) {
-      io.to(receiverSocket.id).emit("chat", data);
-      io.to(socket.id).emit("chat", data);
-
-      await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
+    
+        if (receive) {
+          io.to(receive.socket).emit("chat", data);
+          io.to(socket.id).emit("chat", data);
+    
       await redis.lpush(`messages:${receiver}:${sender}`, JSON.stringify(message));
+      await redis.lpush(`messages:${sender}:${receiver}`, JSON.stringify(message));
 
     }
   });

@@ -17,14 +17,23 @@ model User {
   avatar String?
   bio String?
   friends String[]
-  role String @default("User")
-  status String @default("Offline")
+  role Role @default(USER)
+  status Status @default(Offline)
 }
 
 model Conversation {
   id String @id @default(auto()) @map("_id") @db.ObjectId
-  senderId String @db.ObjectId()
-  receiverId String @db.ObjectId()
+  userId String @db.ObjectId() @unique
+  socket String
   createdAt DateTime @default(now())
 }
 
+enum Status {
+  Online
+  Offline
+}
+
+enum Role {
+  USER
+  ADMIN
+}
